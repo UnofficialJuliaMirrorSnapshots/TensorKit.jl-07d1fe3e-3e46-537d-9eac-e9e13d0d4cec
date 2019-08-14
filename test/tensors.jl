@@ -4,32 +4,35 @@ Vtr = (ℂ^2,
         ℂ^5,
         (ℂ^6)')
 Vℤ₂ = (ℂ[ℤ₂](0=>1, 1=>1),
-        ℂ[ℤ₂](0=>2, 1=>5),
+        ℂ[ℤ₂](0=>1, 1=>2)',
         ℂ[ℤ₂](0=>3, 1=>2)',
         ℂ[ℤ₂](0=>2, 1=>3),
-        ℂ[ℤ₂](0=>1, 1=>2)')
+        ℂ[ℤ₂](0=>2, 1=>5))
 Vℤ₃ = (ℂ[ℤ₃](0=>1, 1=>1, 2=>2),
-        ℂ[ℤ₃](0=>2, 1=>4, 2=>3)',
         ℂ[ℤ₃](0=>3, 1=>2, 2=>1),
         ℂ[ℤ₃](0=>2, 1=>3, 2=>1),
-        ℂ[ℤ₃](0=>1, 1=>2, 2=>3)')
+        ℂ[ℤ₃](0=>1, 1=>2, 2=>3)',
+        ℂ[ℤ₃](0=>2, 1=>4, 2=>3)')
 VU₁ = (ℂ[U₁](0=>1, 1=>1, -1=>2),
-        ℂ[U₁](0=>2, 1=>4, -1=>3)',
         ℂ[U₁](0=>3, 1=>2, -1=>1),
         ℂ[U₁](0=>2, 1=>3, -1=>1),
-        ℂ[U₁](0=>1, 1=>2, -1=>3)')
+        ℂ[U₁](0=>1, 1=>2, -1=>3)',
+        ℂ[U₁](0=>2, 1=>4, -1=>3)')
 VCU₁ = (ℂ[CU₁]((0,0)=>1, (0,1)=>1, 1=>2),
-        ℂ[CU₁]((0,0)=>2, (0,1)=>4, 1=>3)',
         ℂ[CU₁]((0,0)=>3, (0,1)=>2, 1=>1),
         ℂ[CU₁]((0,0)=>2, (0,1)=>3, 1=>1),
-        ℂ[CU₁]((0,0)=>1, (0,1)=>2, 1=>3)')
-VSU₂ = (ℂ[SU₂](0=>1, 1//2=>1, 1=>2),
-        ℂ[SU₂](0=>2, 1//2=>4, 1=>3)',
-        ℂ[SU₂](0=>3, 1//2=>2, 1=>1),
-        ℂ[SU₂](0=>2, 1//2=>3, 1=>1),
-        ℂ[SU₂](0=>1, 1//2=>2, 1=>3)')
+        ℂ[CU₁]((0,0)=>1, (0,1)=>2, 1=>3)',
+        ℂ[CU₁]((0,0)=>2, (0,1)=>4, 1=>3)')
+VSU₂ = (ℂ[SU₂](0=>1, 1//2=>1),
+        ℂ[SU₂](0=>2, 1//2=>1, 1=>1),
+        ℂ[SU₂](1//2=>2, 1=>1),
+        ℂ[SU₂](0=>1, 1//2=>3)',
+        ℂ[SU₂](0=>2, 3//2=>1)')
 
-@testset "Tensors with symmetry: $G" for (G,V) in ((Trivial, Vtr), (ℤ₂, Vℤ₂), (ℤ₃, Vℤ₃), (U₁, VU₁), (CU₁, VCU₁), (SU₂, VSU₂))
+for (G,V) in ((Trivial, Vtr), (ℤ₂, Vℤ₂), (ℤ₃, Vℤ₃), (U₁, VU₁), (CU₁, VCU₁), (SU₂, VSU₂))
+    println("------------------------------------")
+    println("Tensors with symmetry: $G")
+    println("------------------------------------")
     V1, V2, V3, V4, V5 = V
     @testset "Basic tensor properties" begin
         W = V1 ⊗ V2 ⊗ V3 ⊗ V4 ⊗ V5
@@ -102,6 +105,40 @@ VSU₂ = (ℂ[SU₂](0=>1, 1//2=>1, 1=>2),
             end
         end
     end
+    @testset "Tensor product: test via norm preservation" begin
+        for T in (Float32, Float64, ComplexF32, ComplexF64)
+            t1 = TensorMap(rand, T, V2 ⊗ V3 ⊗ V1, V1 ⊗ V2)
+            t2 = TensorMap(rand, T, V2 ⊗ V1 ⊗ V3, V1 ⊗ V1)
+            t = @inferred (t1 ⊗ t2)
+            @test norm(t) ≈ norm(t1) * norm(t2)
+        end
+    end
+    @testset "Tensor product: test via conversion" begin
+        for T in (Float32, Float64, ComplexF32, ComplexF64)
+            t1 = TensorMap(rand, T, V2 ⊗ V3 ⊗ V1, V1)
+            t2 = TensorMap(rand, T, V2 ⊗ V1 ⊗ V3, V2)
+            t = @inferred (t1 ⊗ t2)
+            d1 = dim(codomain(t1))
+            d2 = dim(codomain(t2))
+            d3 = dim(domain(t1))
+            d4 = dim(domain(t2))
+            At = convert(Array, t)
+            @show sizeof(At)
+            @test reshape(At, (d1, d2, d3, d4)) ≈
+                    reshape(convert(Array, t1), (d1, 1, d3, 1)) .*
+                    reshape(convert(Array, t2), (1, d2, 1, d4))
+        end
+    end
+    @testset "Tensor product: test via tensor contraction" begin
+        for T in (Float32, Float64, ComplexF32, ComplexF64)
+            t1 = Tensor(rand, T, V2 ⊗ V3 ⊗ V1)
+            t2 = Tensor(rand, T, V2 ⊗ V1 ⊗ V3)
+            t = @inferred (t1 ⊗ t2)
+            @tensor t′[1, 2, 3, 4, 5, 6] := t1[1,2,3]*t2[4,5,6]
+            @test t ≈ t′
+        end
+    end
+
     @testset "Tensor contraction: test via conversion" begin
         A1 = TensorMap(randn, ComplexF64, V1*V2, V3)
         A2 = TensorMap(randn, ComplexF64, V3*V4, V5)
