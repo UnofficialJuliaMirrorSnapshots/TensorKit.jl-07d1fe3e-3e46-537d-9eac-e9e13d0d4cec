@@ -11,6 +11,8 @@ module TensorKit
 export Sector, Irrep, FusionStyle, BraidingStyle
 export Abelian, SimpleNonAbelian, DegenerateNonAbelian, SymmetricBraiding, Bosonic, Fermionic, Anyonic # sector properties
 export Parity, ZNIrrep, U1Irrep, SU2Irrep, FermionParity, FermionNumber, FermionSpin # specific sectors
+export FibonacciAnyon
+
 export VectorSpace, Field, ElementarySpace, InnerProductSpace, EuclideanSpace # abstract vector spaces
 export ComplexSpace, CartesianSpace, GeneralSpace, RepresentationSpace, ZNSpace, Rep # concrete spaces
 export Z2Space, Z3Space, Z4Space, U1Space, CU1Space, SU2Space
@@ -25,7 +27,7 @@ export space, field, dual, dim, dims, fuse, flip, isdual
 # methods for sectors and properties thereof
 export sectortype, sectors, hassector, Nsymbol, Fsymbol, Rsymbol, Bsymbol, frobeniusschur
 export Trivial, ZNSpace, SU2Irrep, U1Irrep, CU1Irrep # Fermion
-export fusiontrees, braid, repartition, insertat
+export fusiontrees, artin_braid, braid, repartition, insertat
 
 # some unicode
 export ⊕, ⊗, ×, ℂ, ℝ, ←, →
